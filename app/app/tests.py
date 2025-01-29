@@ -79,3 +79,32 @@ def test_submit_feedback_invalid_data():
     response = client.post("/feedbacks", json=invalid_data)
 
     assert response.status_code == 422
+
+def test_get_feedback_exists():
+    feedback_form = FeedbackForm(text="Test feedback")
+    post_response = client.post("/feedbacks", json=feedback_form.model_dump())
+    assert post_response.status_code == 201
+
+    feedback_id = post_response.json()["id"]
+
+    get_response = client.get(f"/feedbacks/{feedback_id}")
+    assert get_response.status_code == 200
+
+    response_data = get_response.json()
+    assert response_data["id"] == feedback_id
+    assert response_data["text"] == "Test feedback"
+
+
+def test_get_feedback_not_exists():
+    non_existent_feedback_id = uuid.uuid4()
+
+    get_response = client.get(f"/feedbacks/{non_existent_feedback_id}")
+    assert get_response.status_code == 404
+    assert get_response.json()["detail"] == "Feedback not found"
+
+
+def test_get_feedback_invalid_uuid():
+    invalid_uuid = "not-a-valid-uuid"
+
+    get_response = client.get(f"/feedbacks/{invalid_uuid}")
+    assert get_response.status_code == 422

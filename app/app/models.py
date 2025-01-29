@@ -7,3 +7,7 @@ class FeedbackForm(BaseModel):
 
 class FeedbackCreatedResponse(BaseModel):
     id: UUID
+
+class FeedbackResponse(BaseModel):
+    id: UUID
+    text: str
