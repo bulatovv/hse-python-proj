@@ -34,16 +34,9 @@ jobs:
       - name: Run tests and coverage for app service
         run: |
           cd app
-          poetry run pytest --cov=app --cov-report=xml:../coverage-app.xml
+          poetry run pytest --cov=app 
 
       - name: Run tests and coverage for ml service with log-level=info
         run: |
           cd ml
-          poetry run pytest --cov=ml --cov-report=xml:../coverage-ml.xml --log-level=info
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          files: coverage-app.xml,coverage-ml.xml
-          fail_ci_if_error: true
-
+          poetry run pytest --cov=ml --log-level=info
