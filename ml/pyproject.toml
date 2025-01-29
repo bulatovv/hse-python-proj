@@ -6,7 +6,7 @@ authors = ["Albert Fazlyev <albert.fz@yandex.ru>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = ">=3.11"
 confluent-kafka = "^2.8.0"
 pydantic-settings = "^2.7.1"
 
