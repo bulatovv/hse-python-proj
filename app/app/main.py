@@ -43,7 +43,7 @@ def submit_feedback(
 
     producer.produce(
         settings.kafka_topic,
-        key=feedback_id,
+        key=str(feedback_id).encode('utf-8'),
         value=json.dumps(feedback_event),
         callback=kafka_delivery_report
     )
