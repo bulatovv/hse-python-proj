@@ -1,5 +1,5 @@
 import json
-from confluent_kafka import KafkaError
+from confluent_kafka import KafkaError, KafkaException
 import pytest
 
 from ml import feedback_consumer
@@ -72,10 +72,17 @@ def test_consume_feedback_events_json_decode_error(mock_consumer, caplog):
     feedback_consumer.consume_feedback_events()
 
     assert "Failed to decode message:" in caplog.text
+    
+    mock_consumer.messages = [MockMessage(b'\xff\xfe\xfd')]
+    feedback_consumer.consume_feedback_events()
+
+    assert "Error processing message:" in caplog.text
+
+
 
 def test_consume_feedback_events_kafka_error(mock_consumer, caplog):
     mock_error = MockKafkaError(KafkaError(error=KafkaError.UNKNOWN_TOPIC_OR_PART))
-    mock_consumer.messages = [MockMessage(None, error=mock_error)]
+    mock_consumer.messages = [None, MockMessage(None, error=mock_error)]
 
     feedback_consumer.create_kafka_consumer = lambda: mock_consumer
 
@@ -83,3 +90,20 @@ def test_consume_feedback_events_kafka_error(mock_consumer, caplog):
         feedback_consumer.consume_feedback_events()
 
     assert "Topic or partition does not exist:" in caplog.text
+    
+    mock_error = MockKafkaError(KafkaError(error=KafkaError._PARTITION_EOF))
+    mock_consumer.messages = [MockMessage(None, error=mock_error)]
+
+    feedback_consumer.create_kafka_consumer = lambda: mock_consumer
+
+    feedback_consumer.consume_feedback_events()
+
+    assert "Reached end of partition" in caplog.text
+
+    mock_error = MockKafkaError(KafkaError(error=KafkaError._ALL_BROKERS_DOWN))
+    mock_consumer.messages = [MockMessage(None, error=mock_error)]
+
+    feedback_consumer.create_kafka_consumer = lambda: mock_consumer
+    with pytest.raises(KafkaException):
+        feedback_consumer.consume_feedback_events()
+

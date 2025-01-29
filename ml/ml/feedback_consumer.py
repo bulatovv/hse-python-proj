@@ -48,7 +48,7 @@ def consume_feedback_events():
                 elif msg.error():
                     raise KafkaException(msg.error())
 
-                consumer.commit(asynchronous=False)
+            consumer.commit(asynchronous=False)
 
     except KeyboardInterrupt:
         logger.info("Shutting down Kafka consumer...")
