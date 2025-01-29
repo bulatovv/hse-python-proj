@@ -13,6 +13,7 @@ from app.db_models import Feedback, Base
 from app.models import FeedbackForm, FeedbackCreatedResponse, FeedbackResponse
 from app.settings import settings
 
+logging.basicConfig(level=logging.INFO)
 logger = None 
 
 Base.metadata.create_all(bind=engine)
@@ -29,7 +30,6 @@ REQUEST_LATENCY = Histogram(
 @app.on_event("startup")
 def setup_logger():
     global logger
-    logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('uvicorn.error')
 
 def get_db():
@@ -49,11 +49,14 @@ def get_kafka_producer():
         producer.flush()
 
 def kafka_delivery_report(err, msg):
-    assert logger
+    global logger
+    if logger is None:
+        logger = logging.getLogger(__name__)
+
     if err is not None:
-        logger.error(f"Message delivery failed: {err}")
+        logger.error(f"Message delivery failed: {err}") # type: ignore
     else:
-        logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}]")
+        logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}]") # type: ignore
 
 @app.post('/feedbacks', status_code=201)
 def submit_feedback(
