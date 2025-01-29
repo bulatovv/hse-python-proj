@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install dependencies for app service
+        run: |
+          cd app
+          poetry install --no-root
+
+      - name: Install dependencies for ml service
+        run: |
+          cd ml
+          poetry install --no-root
+
+      - name: Run tests and coverage for app service
+        run: |
+          cd app
+          poetry run pytest --cov=app --cov-report term-missing 
+
+      - name: Run tests and coverage for ml service with log-level=info
+        run: |
+          cd ml
+          poetry run pytest --cov=ml --log-level=info --cov-report term-missing
