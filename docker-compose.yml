@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.8.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  kafka-setup:
+    image: confluentinc/cp-kafka:7.8.0
+    container_name: kafka-setup
+    depends_on:
+      - kafka
+    entrypoint: [ "/bin/sh", "-c" ]
+    command: |
+      "
+      kafka-topics --bootstrap-server kafka:9092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic feedback_events --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server kafka:9092 --list
+      "
