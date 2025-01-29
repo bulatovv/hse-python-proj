@@ -1,9 +1,13 @@
-from fastapi import FastAPI, Response, Depends
-from confluent_kafka import Producer
 import uuid
 import json
 import logging
+from typing import Annotated
+from fastapi import FastAPI, Response, Depends
+from confluent_kafka import Producer
+from sqlalchemy.orm import Session
 
+from app.database import SessionLocal, engine
+from app.db_models import Feedback
 from app.models import FeedbackForm, FeedbackCreatedResponse
 from app.settings import settings
 
@@ -11,6 +15,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+
+Feedback.metadata.create_all(bind=engine)
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
 
 def get_kafka_producer():
     producer = Producer({
@@ -32,9 +47,15 @@ def kafka_delivery_report(err, msg):
 def submit_feedback(
     form: FeedbackForm,
     response: Response,
-    producer: Producer = Depends(get_kafka_producer)
+    producer: Annotated[Producer, Depends(get_kafka_producer)],
+    db: Annotated[Session, Depends(get_db)] 
 ):
     feedback_id = uuid.uuid4()
+
+    db_feedback = Feedback(id=feedback_id, text=form.text)
+    db.add(db_feedback)
+    db.commit()
+    db.refresh(db_feedback)
 
     feedback_event = {
         "id": str(feedback_id),
