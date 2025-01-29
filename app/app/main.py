@@ -5,19 +5,32 @@ from typing import Annotated
 from fastapi import FastAPI, HTTPException, Response, Depends
 from confluent_kafka import Producer
 from sqlalchemy.orm import Session
+from prometheus_fastapi_instrumentator import Instrumentator
+from prometheus_client import Counter, Histogram
 
 from app.database import SessionLocal, engine
 from app.db_models import Feedback, Base
 from app.models import FeedbackForm, FeedbackCreatedResponse, FeedbackResponse
 from app.settings import settings
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = None 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+REQUEST_COUNT = Counter(
+    'app_request_count', 'Total number of requests', ['method', 'endpoint']
+)
+REQUEST_LATENCY = Histogram(
+    'app_request_latency_seconds', 'Request latency in seconds', ['method', 'endpoint']
+)
+
+@app.on_event("startup")
+def setup_logger():
+    global logger
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger('uvicorn.error')
 
 def get_db():
     db = SessionLocal()
@@ -25,7 +38,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 def get_kafka_producer():
     producer = Producer({
@@ -37,11 +49,11 @@ def get_kafka_producer():
         producer.flush()
 
 def kafka_delivery_report(err, msg):
+    assert logger
     if err is not None:
         logger.error(f"Message delivery failed: {err}")
     else:
         logger.info(f"Message delivered to {msg.topic()} [{msg.partition()}]")
-
 
 @app.post('/feedbacks', status_code=201)
 def submit_feedback(
@@ -80,4 +92,6 @@ def get_feedback(
     db_feedback = db.query(Feedback).filter(Feedback.id == feedback_id).first()
     if db_feedback is None:
         raise HTTPException(status_code=404, detail="Feedback not found")
-    return FeedbackResponse(id=db_feedback.id, text=db_feedback.text)
+    return FeedbackResponse(id=db_feedback.id, text=db_feedback.text) # type: ignore
+
+Instrumentator().instrument(app).expose(app)
