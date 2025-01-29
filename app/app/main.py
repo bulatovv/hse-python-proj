@@ -7,12 +7,14 @@ from confluent_kafka import Producer
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, engine
-from app.db_models import Feedback
+from app.db_models import Feedback, Base
 from app.models import FeedbackForm, FeedbackCreatedResponse
 from app.settings import settings
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
