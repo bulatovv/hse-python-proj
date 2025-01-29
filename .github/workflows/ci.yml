@@ -34,9 +34,9 @@ jobs:
       - name: Run tests and coverage for app service
         run: |
           cd app
-          poetry run pytest --cov=app 
+          poetry run pytest --cov=app --cov-report term-missing 
 
       - name: Run tests and coverage for ml service with log-level=info
         run: |
           cd ml
-          poetry run pytest --cov=ml --log-level=info
+          poetry run pytest --cov=ml --log-level=info --cov-report term-missing
