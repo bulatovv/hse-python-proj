@@ -68,7 +68,7 @@ def test_submit_feedback():
     db = next(override_get_db())
     feedback = db.query(Feedback).filter(Feedback.id == uuid.UUID(id)).first()
     assert feedback is not None
-    assert feedback.text == "This is a test feedback"
+    assert feedback.text == "This is a test feedback" # type: ignore
 
 def test_submit_feedback_invalid_data():
     invalid_data = {

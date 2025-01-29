@@ -17,8 +17,6 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 
-Feedback.metadata.create_all(bind=engine)
-
 def get_db():
     db = SessionLocal()
     try:
